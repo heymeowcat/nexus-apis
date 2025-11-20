@@ -1,6 +1,6 @@
-# Express.js on Vercel
-
-Basic Express.js + Vercel example that serves html content, JSON data and simulates an api route.
+# Nexus APIs
+ 
+Nexus APIs project providing a Requisition Approval API and other services.
 
 ## How to Use
 
