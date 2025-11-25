@@ -299,4 +299,141 @@ app.get('/po/approval-matrix', (req, res) => {
   })
 })
 
+// --- Task and Team Member Management ---
+
+interface TeamMember {
+  id: string
+  name: string
+  role: string
+  workItemTypes: string[]
+}
+
+interface Task {
+  id: string
+  name: string
+  description: string
+  projectCode: string
+  status: 'Not Started' | 'In Progress' | 'Completed'
+  assignedTo: string[] // TeamMember IDs
+  startDate: string
+  endDate: string
+}
+
+const teamMembers: TeamMember[] = [
+  { id: 'TM-001', name: 'John Doe', role: 'Developer', workItemTypes: ['Backend', 'API'] },
+  { id: 'TM-002', name: 'Jane Smith', role: 'Tester', workItemTypes: ['QA', 'Automation'] },
+  { id: 'TM-003', name: 'Mike Johnson', role: 'Project Manager', workItemTypes: ['Management'] },
+]
+
+const tasks: Task[] = [
+  {
+    id: 'TASK-1001',
+    name: 'Initial Setup',
+    description: 'Project initialization',
+    projectCode: 'PROJ-A',
+    status: 'Not Started',
+    assignedTo: [],
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 86400000).toISOString(),
+  }
+]
+
+// 1. POST /team/createTask
+app.post('/team/createTask', (req, res) => {
+  const { name, description, projectCode, startDate, endDate } = req.body
+  
+  if (!name || !projectCode) {
+    return res.status(400).json({ error: 'Name and Project Code are required' })
+  }
+
+  const newTask: Task = {
+    id: `TASK-${1000 + tasks.length + 1}`,
+    name,
+    description: description || '',
+    projectCode,
+    status: 'Not Started',
+    assignedTo: [],
+    startDate: startDate || new Date().toISOString(),
+    endDate: endDate || new Date(Date.now() + 7 * 86400000).toISOString(),
+  }
+
+  tasks.push(newTask)
+  res.json({ message: 'Task created successfully', task: newTask })
+})
+
+// 2. POST /team/assignTask
+app.post('/team/assignTask', (req, res) => {
+  const { taskId, teamMemberIds } = req.body
+
+  const task = tasks.find(t => t.id === taskId)
+  if (!task) return res.status(404).json({ error: 'Task not found' })
+
+  // Validate team members
+  const validMembers = teamMembers.filter(tm => teamMemberIds.includes(tm.id))
+  if (validMembers.length !== teamMemberIds.length) {
+    return res.status(400).json({ error: 'One or more team members not found' })
+  }
+
+  task.assignedTo = [...new Set([...task.assignedTo, ...teamMemberIds])]
+  res.json({ message: 'Task assigned successfully', task })
+})
+
+// 3. PUT /team/editTask
+app.put('/team/editTask', (req, res) => {
+  const { taskId, updates } = req.body
+  
+  const taskIndex = tasks.findIndex(t => t.id === taskId)
+  if (taskIndex === -1) return res.status(404).json({ error: 'Task not found' })
+
+  tasks[taskIndex] = { ...tasks[taskIndex], ...updates }
+  res.json({ message: 'Task updated successfully', task: tasks[taskIndex] })
+})
+
+// 4. GET /team/getTeamMembers
+app.get('/team/getTeamMembers', (req, res) => {
+  res.json({ count: teamMembers.length, teamMembers })
+})
+
+// 5. POST /team/replaceTeamMember
+app.post('/team/replaceTeamMember', (req, res) => {
+  const { taskId, oldMemberId, newMemberId } = req.body
+
+  const task = tasks.find(t => t.id === taskId)
+  if (!task) return res.status(404).json({ error: 'Task not found' })
+
+  if (!task.assignedTo.includes(oldMemberId)) {
+    return res.status(400).json({ error: 'Old member is not assigned to this task' })
+  }
+
+  const newMember = teamMembers.find(tm => tm.id === newMemberId)
+  if (!newMember) return res.status(404).json({ error: 'New team member not found' })
+
+  // Replace
+  task.assignedTo = task.assignedTo.map(id => id === oldMemberId ? newMemberId : id)
+  
+  res.json({ 
+    message: `Replaced ${oldMemberId} with ${newMemberId} on task ${taskId}`,
+    task 
+  })
+})
+
+// 6. POST /team/assignRole
+app.post('/team/assignRole', (req, res) => {
+  const { teamMemberId, newRole } = req.body
+  
+  const member = teamMembers.find(tm => tm.id === teamMemberId)
+  if (!member) return res.status(404).json({ error: 'Team member not found' })
+
+  member.role = newRole
+  res.json({ message: 'Role updated', teamMember: member })
+})
+
+// 7. POST /team/triggerNotification
+app.post('/team/triggerNotification', (req, res) => {
+  const { type, recipientId, message } = req.body
+  // Mock notification logic
+  console.log(`[Notification] Type: ${type}, To: ${recipientId}, Msg: ${message}`)
+  res.json({ success: true, timestamp: new Date().toISOString() })
+})
+
 export default app
