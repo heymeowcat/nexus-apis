@@ -18,6 +18,16 @@ app.get('/', (req, res) => {
         <meta charset="utf-8"/>
         <title>Nexus APIs</title>
         <link rel="stylesheet" href="/style.css" />
+        <style>
+          body { font-family: sans-serif; padding: 2rem; }
+          nav { margin-bottom: 2rem; }
+          nav a { margin-right: 1rem; text-decoration: none; color: #007bff; }
+          nav a:hover { text-decoration: underline; }
+          table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+          th, td { border: 1px solid #ddd; padding: 0.75rem; text-align: left; }
+          th { background-color: #f8f9fa; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+        </style>
       </head>
       <body>
         <nav>
@@ -27,8 +37,33 @@ app.get('/', (req, res) => {
           <a href="/healthz">Health</a>
         </nav>
         <h1>Welcome to Nexus APIs 🚀</h1>
-        <p>This is a minimal example without a database or forms.</p>
-        <img src="/logo.png" alt="Logo" width="120" />
+        
+        <h2>Available Endpoints</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>POST</td><td>/requisitionApproval</td><td>Submit a requisition for approval</td></tr>
+            <tr><td>GET</td><td>/healthz</td><td>Service health check</td></tr>
+            <tr><td>GET</td><td>/po/notifications</td><td>Retrieve pending PO approvals</td></tr>
+            <tr><td>POST</td><td>/po/approve</td><td>Approve a Purchase Order</td></tr>
+            <tr><td>POST</td><td>/po/reject</td><td>Reject a Purchase Order</td></tr>
+            <tr><td>POST</td><td>/po/reassign</td><td>Reassign a PO approval</td></tr>
+            <tr><td>GET</td><td>/po/approval-matrix</td><td>Fetch approval hierarchy</td></tr>
+            <tr><td>POST</td><td>/team/createTask</td><td>Create a new task</td></tr>
+            <tr><td>POST</td><td>/team/assignTask</td><td>Assign a task to team members</td></tr>
+            <tr><td>PUT</td><td>/team/editTask</td><td>Update task details</td></tr>
+            <tr><td>GET</td><td>/team/getTeamMembers</td><td>List all team members</td></tr>
+            <tr><td>POST</td><td>/team/replaceTeamMember</td><td>Replace a team member on a task</td></tr>
+            <tr><td>POST</td><td>/team/assignRole</td><td>Assign a role to a team member</td></tr>
+            <tr><td>POST</td><td>/team/triggerNotification</td><td>Trigger a team notification</td></tr>
+          </tbody>
+        </table>
       </body>
     </html>
   `)
