@@ -33,7 +33,6 @@ app.get('/', (req, res) => {
         <nav>
           <a href="/">Home</a>
           <a href="/about">About</a>
-          <a href="/requisitionApproval">Requisition Approval</a>
           <a href="/healthz">Health</a>
         </nav>
         <h1>Welcome to Nexus APIs 🚀</h1>
@@ -469,6 +468,300 @@ app.post('/team/triggerNotification', (req, res) => {
   // Mock notification logic
   console.log(`[Notification] Type: ${type}, To: ${recipientId}, Msg: ${message}`)
   res.json({ success: true, timestamp: new Date().toISOString() })
+})
+
+// --- Accounts Receivable Automation ---
+
+interface InvoiceItem {
+  description: string
+  quantity: number
+  unit_price: number
+  tax_code: string
+}
+
+interface Invoice {
+  id: string
+  customer_id: string
+  invoice_date: string
+  due_date: string
+  line_items: InvoiceItem[]
+  currency: string
+  payment_terms: string
+  status: 'Draft' | 'Sent' | 'Paid' | 'Overdue' | 'Cancelled'
+  balance: number
+}
+
+interface CollectionNote {
+  date: string
+  user: string
+  action: string
+  comment: string
+}
+
+interface CollectionStatus {
+  invoice_id: string
+  status: 'Open' | 'In Progress' | 'Closed'
+  last_action: string
+  next_action_due: string
+  notes: CollectionNote[]
+}
+
+const invoices: Invoice[] = [
+  {
+    id: 'INV-2001',
+    customer_id: 'CUST-001',
+    invoice_date: '2023-10-01',
+    due_date: '2023-10-31',
+    line_items: [{ description: 'Consulting Services', quantity: 10, unit_price: 150, tax_code: 'VAT' }],
+    currency: 'USD',
+    payment_terms: 'Net 30',
+    status: 'Overdue',
+    balance: 1500
+  }
+]
+
+const collections: CollectionStatus[] = [
+  {
+    invoice_id: 'INV-2001',
+    status: 'In Progress',
+    last_action: 'Email Reminder',
+    next_action_due: '2023-11-15',
+    notes: [
+      { date: '2023-11-01', user: 'System', action: 'Email', comment: 'First reminder sent' }
+    ]
+  }
+]
+
+// 1. POST /acc/invoices: Create Invoice
+app.post('/acc/invoices', (req, res) => {
+  const { customer_id, invoice_date, due_date, line_items, currency, payment_terms } = req.body
+
+  if (!customer_id || !line_items || line_items.length === 0) {
+    return res.status(400).json({ error: 'Missing required invoice fields' })
+  }
+
+  const totalAmount = line_items.reduce((sum: number, item: InvoiceItem) => sum + (item.quantity * item.unit_price), 0)
+  
+  const newInvoice: Invoice = {
+    id: `INV-${2000 + invoices.length + 1}`,
+    customer_id,
+    invoice_date,
+    due_date,
+    line_items,
+    currency: currency || 'USD',
+    payment_terms: payment_terms || 'Net 30',
+    status: 'Sent',
+    balance: totalAmount
+  }
+
+  invoices.push(newInvoice)
+  
+  // Initialize collection record
+  collections.push({
+    invoice_id: newInvoice.id,
+    status: 'Open',
+    last_action: 'Created',
+    next_action_due: due_date,
+    notes: []
+  })
+
+  res.json({
+    invoice_id: newInvoice.id,
+    status: 'created',
+    message: 'Invoice created successfully',
+    download_url: `/acc/invoices/${newInvoice.id}/view`
+  })
+})
+
+// 1.1 GET /acc/invoices/:id/view: Render Invoice HTML
+app.get('/acc/invoices/:id/view', (req, res) => {
+  const { id } = req.params
+  const invoice = invoices.find(i => i.id === id)
+  if (!invoice) return res.status(404).send('Invoice not found')
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Invoice ${invoice.id}</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); }
+          .header { display: flex; justify-content: space-between; margin-bottom: 50px; }
+          .header h1 { margin: 0; color: #333; }
+          .info { margin-bottom: 20px; }
+          table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
+          table td { padding: 10px; vertical-align: top; }
+          table tr.heading td { background: #eee; border-bottom: 1px solid #ddd; font-weight: bold; }
+          table tr.item td { border-bottom: 1px solid #eee; }
+          table tr.total td:nth-child(4) { border-top: 2px solid #eee; font-weight: bold; }
+          .status { padding: 5px 10px; border-radius: 5px; font-size: 0.9em; font-weight: bold; }
+          .status.Overdue { background: #ffebee; color: #c62828; }
+          .status.Sent { background: #e3f2fd; color: #1565c0; }
+          .status.Paid { background: #e8f5e9; color: #2e7d32; }
+          .print-btn { display: block; width: 100%; padding: 10px; background: #333; color: #fff; text-align: center; text-decoration: none; margin-top: 20px; border-radius: 5px; }
+          @media print { .print-btn { display: none; } .invoice-box { border: none; box-shadow: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-box">
+          <div class="header">
+            <div>
+              <h1>INVOICE</h1>
+              <div class="info">
+                <strong>Invoice #:</strong> ${invoice.id}<br>
+                <strong>Date:</strong> ${invoice.invoice_date}<br>
+                <strong>Due Date:</strong> ${invoice.due_date}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <h3>Nexus Corp</h3>
+              <div class="info">
+                <strong>Bill To:</strong><br>
+                Customer ID: ${invoice.customer_id}<br>
+                Terms: ${invoice.payment_terms}
+              </div>
+              <span class="status ${invoice.status}">${invoice.status}</span>
+            </div>
+          </div>
+          
+          <table>
+            <tr class="heading">
+              <td>Description</td>
+              <td>Qty</td>
+              <td>Unit Price</td>
+              <td>Total</td>
+            </tr>
+            ${invoice.line_items.map(item => `
+              <tr class="item">
+                <td>${item.description}</td>
+                <td>${item.quantity}</td>
+                <td>${invoice.currency} ${item.unit_price.toFixed(2)}</td>
+                <td>${invoice.currency} ${(item.quantity * item.unit_price).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+            <tr class="total">
+              <td></td>
+              <td></td>
+              <td>Total:</td>
+              <td>${invoice.currency} ${invoice.balance.toFixed(2)}</td>
+            </tr>
+          </table>
+          
+          <a href="javascript:window.print()" class="print-btn">Download PDF / Print</a>
+        </div>
+      </body>
+    </html>
+  `
+  res.type('html').send(html)
+})
+
+// 2. POST /acc/invoices/:id/reminder: Send Reminder
+app.post('/acc/invoices/:id/reminder', (req, res) => {
+  const { id } = req.params
+  const { reminder_type, send_date } = req.body
+
+  const invoice = invoices.find(i => i.id === id)
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+
+  const collection = collections.find(c => c.invoice_id === id)
+  if (collection) {
+    collection.last_action = `Reminder: ${reminder_type}`
+    collection.notes.push({
+      date: new Date().toISOString(),
+      user: 'System',
+      action: 'Reminder',
+      comment: `Sent ${reminder_type} reminder scheduled for ${send_date}`
+    })
+  }
+
+  res.json({
+    status: 'sent',
+    message: `Reminder (${reminder_type}) queued for invoice ${id}`
+  })
+})
+
+// 3. GET /acc/invoices/:id/collections: Get Collection Status
+app.get('/acc/invoices/:id/collections', (req, res) => {
+  const { id } = req.params
+  const collection = collections.find(c => c.invoice_id === id)
+  
+  if (!collection) return res.status(404).json({ error: 'Collection record not found' })
+  
+  res.json({
+    invoice_id: collection.invoice_id,
+    collection_status: collection.status,
+    last_action: collection.last_action,
+    next_action_due: collection.next_action_due,
+    notes: collection.notes
+  })
+})
+
+// 4. POST /acc/invoices/:id/collections: Update Collection Action
+app.post('/acc/invoices/:id/collections', (req, res) => {
+  const { id } = req.params
+  const { action, comment } = req.body
+
+  const collection = collections.find(c => c.invoice_id === id)
+  if (!collection) return res.status(404).json({ error: 'Collection record not found' })
+
+  collection.last_action = action
+  collection.notes.push({
+    date: new Date().toISOString(),
+    user: 'Agent', // In real app, get from auth context
+    action,
+    comment
+  })
+
+  res.json({
+    status: 'updated',
+    message: 'Collection action logged successfully'
+  })
+})
+
+// 5. GET /acc/reports/ar-aging: AR Aging Report
+app.get('/acc/reports/ar-aging', (req, res) => {
+  const { as_of_date } = req.query
+  
+  // Mock calculation
+  const totalDue = invoices.reduce((sum, inv) => sum + inv.balance, 0)
+  const overdueInvoices = invoices.filter(inv => inv.status === 'Overdue')
+  const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + inv.balance, 0)
+
+  res.json({
+    report_id: `RPT-${Date.now()}`,
+    download_url: `/downloads/ar-aging-${as_of_date}.xlsx`,
+    summary: {
+      total_due: totalDue,
+      total_overdue: totalOverdue,
+      by_bucket: {
+        '0-30': totalDue - totalOverdue,
+        '31-60': totalOverdue * 0.8, // Mock split
+        '61-90': totalOverdue * 0.2,
+        '90+': 0
+      }
+    }
+  })
+})
+
+// 6. GET /acc/reports/invoice-status: Invoice Status Report
+app.get('/acc/reports/invoice-status', (req, res) => {
+  const { status, start_date, end_date } = req.query
+
+  let filtered = invoices
+  if (status) {
+    filtered = filtered.filter(i => i.status.toLowerCase() === (status as string).toLowerCase())
+  }
+
+  res.json({
+    report_id: `RPT-STAT-${Date.now()}`,
+    download_url: `/downloads/inv-status.pdf`,
+    summary: {
+      count: filtered.length,
+      total_value: filtered.reduce((sum, i) => sum + i.balance, 0),
+      date_range: { start: start_date, end: end_date }
+    }
+  })
 })
 
 export default app
