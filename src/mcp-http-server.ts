@@ -994,8 +994,8 @@ async function executeTool(name: string, args: any): Promise<any> {
 export function createMCPRouter() {
   const router = express.Router()
 
-  // Handle MCP JSON-RPC requests
-  router.post('/message', async (req: Request, res: Response) => {
+  // Shared message handler function
+  const handleMessage = async (req: Request, res: Response) => {
     try {
       const request = req.body as JSONRPCRequest
 
@@ -1067,21 +1067,19 @@ export function createMCPRouter() {
       }
       return res.status(500).json(errorResponse)
     }
-  })
+  }
 
-  // Enable CORS for MCP endpoints
-  router.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*')
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(200)
+  // Handle MCP JSON-RPC requests on /message
+  router.post('/message', handleMessage)
+
+  // SSE Endpoint for MCP Connection (Handling both GET and POST)
+  router.all('/sse', (req: Request, res: Response) => {
+    // If it's a POST request, treat it as a message
+    if (req.method === 'POST') {
+      return handleMessage(req, res)
     }
-    next()
-  })
 
-  // SSE Endpoint for MCP Connection
-  router.get('/sse', (req: Request, res: Response) => {
+    // Otherwise, establish SSE connection (GET)
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -1090,7 +1088,6 @@ export function createMCPRouter() {
     })
 
     // Construct absolute URL for the message endpoint
-    // This helps avoid issues with relative path resolution in some clients
     const protocol = req.headers['x-forwarded-proto'] || req.protocol
     const host = req.headers['x-forwarded-host'] || req.headers.host
     const messageEndpoint = `${protocol}://${host}/mcp/message`
