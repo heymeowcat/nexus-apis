@@ -1115,10 +1115,9 @@ export function createMCPRouter() {
       'Access-Control-Allow-Origin': '*',
     })
 
-    // Construct absolute URL for the message endpoint
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol
-    const host = req.headers['x-forwarded-host'] || req.headers.host
-    const messageEndpoint = `${protocol}://${host}/mcp/message`
+    // Use relative URL for the message endpoint
+    // This allows the client to resolve it against the connection URL, avoiding origin mismatches
+    const messageEndpoint = '/mcp/message'
     
     res.write(`event: endpoint\ndata: ${messageEndpoint}\n\n`)
     
@@ -1137,10 +1136,6 @@ export function createMCPRouter() {
 
   // Server info endpoint
   router.get('/', (req: Request, res: Response) => {
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol
-    const host = req.headers['x-forwarded-host'] || req.headers.host
-    const baseUrl = `${protocol}://${host}`
-
     res.json({
       name: 'Nexus HR Workflows MCP',
       version: '1.0.0',
@@ -1148,14 +1143,14 @@ export function createMCPRouter() {
       protocol: 'MCP over HTTP',
       transport: 'http',
       endpoints: {
-        sse: `${baseUrl}/mcp/sse`,
-        messages: `${baseUrl}/mcp/message`
+        sse: '/mcp/sse',
+        messages: '/mcp/message'
       },
       tools: tools.map(t => ({
         name: t.name,
         description: t.description,
       })),
-      note: `For Copilot Studio, use the SSE URL: ${baseUrl}/mcp/sse`
+      note: 'For Copilot Studio, use the SSE URL: /mcp/sse (relative to base URL)'
     })
   })
 
