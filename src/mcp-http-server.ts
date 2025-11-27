@@ -998,17 +998,23 @@ export function createMCPRouter() {
   const handleMessage = async (req: Request, res: Response) => {
     try {
       const request = req.body as JSONRPCRequest
+      console.log(`[MCP] Received request: ${request.method} (ID: ${request.id})`)
 
       if (request.method === 'tools/list') {
+        console.log('[MCP] Sending tool list')
         const response: JSONRPCResponse = {
           jsonrpc: '2.0',
           id: request.id,
-          result: { tools },
+          result: { 
+            tools,
+            nextCursor: null
+          },
         }
         return res.json(response)
       }
 
       if (request.method === 'tools/call') {
+        console.log(`[MCP] Calling tool: ${request.params?.name}`)
         const { name, arguments: args } = request.params as any
         const result = await executeTool(name, args || {})
         
@@ -1029,13 +1035,19 @@ export function createMCPRouter() {
 
       // Handle initialize request
       if (request.method === 'initialize') {
+        console.log('[MCP] Initializing session')
         const response: JSONRPCResponse = {
           jsonrpc: '2.0',
           id: request.id,
           result: {
             protocolVersion: '2024-11-05',
             capabilities: {
-              tools: {},
+              tools: {
+                listChanged: true
+              },
+              resources: {},
+              prompts: {},
+              logging: {}
             },
             serverInfo: {
               name: 'nexus-onboarding-offboarding',
@@ -1048,11 +1060,21 @@ export function createMCPRouter() {
 
       // Handle initialized notification
       if (request.method === 'notifications/initialized') {
+        console.log('[MCP] Session initialized')
+        // If it has an ID, it expects a response (even though it shouldn't for notifications)
+        if (request.id !== undefined && request.id !== null) {
+          return res.json({
+            jsonrpc: '2.0',
+            id: request.id,
+            result: true
+          })
+        }
         // Just acknowledge the notification
         return res.status(200).end()
       }
 
       // Unknown method
+      console.warn(`[MCP] Unknown method: ${request.method}`)
       const errorResponse = {
         jsonrpc: '2.0' as const,
         id: request.id,
