@@ -1046,6 +1046,12 @@ export function createMCPRouter() {
         return res.json(response)
       }
 
+      // Handle initialized notification
+      if (request.method === 'notifications/initialized') {
+        // Just acknowledge the notification
+        return res.status(200).end()
+      }
+
       // Unknown method
       const errorResponse = {
         jsonrpc: '2.0' as const,
