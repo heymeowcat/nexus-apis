@@ -49,6 +49,7 @@ app.get('/', (req, res) => {
           <tbody>
             <tr><td>POST</td><td>/requisitionApproval</td><td>Submit a requisition for approval</td></tr>
             <tr><td>GET</td><td>/healthz</td><td>Service health check</td></tr>
+            <tr><td>MCP</td><td>/mcp</td><td><strong>🔌 MCP Server for Onboarding/Offboarding</strong> (17 tools available)</td></tr>
             <tr><td>GET</td><td>/po/notifications</td><td>Retrieve pending PO approvals</td></tr>
             <tr><td>POST</td><td>/po/approve</td><td>Approve a Purchase Order</td></tr>
             <tr><td>POST</td><td>/po/reject</td><td>Reject a Purchase Order</td></tr>
@@ -761,6 +762,113 @@ app.get('/acc/reports/invoice-status', (req, res) => {
       total_value: filtered.reduce((sum, i) => sum + i.balance, 0),
       date_range: { start: start_date, end: end_date }
     }
+  })
+})
+
+// MCP Server Information Endpoint
+app.get('/mcp', (req, res) => {
+  res.json({
+    name: 'Nexus Onboarding/Offboarding MCP Server',
+    version: '1.0.0',
+    description: 'Model Context Protocol server for automated employee onboarding and offboarding workflows',
+    protocol: 'MCP (Model Context Protocol)',
+    transport: 'stdio',
+    tools: [
+      {
+        name: 'initiate_onboarding',
+        description: 'Start the onboarding process for a new employee',
+        category: 'onboarding'
+      },
+      {
+        name: 'validate_onboarding_data',
+        description: 'Validate that all required employee data fields are complete',
+        category: 'onboarding'
+      },
+      {
+        name: 'approve_onboarding',
+        description: 'HR or Manager approval of onboarding request',
+        category: 'onboarding'
+      },
+      {
+        name: 'provision_systems',
+        description: 'Trigger IT system provisioning (email, network, tools)',
+        category: 'onboarding'
+      },
+      {
+        name: 'enroll_benefits',
+        description: 'Finance integration for payroll and benefits',
+        category: 'onboarding'
+      },
+      {
+        name: 'check_onboarding_compliance',
+        description: 'Verify mandatory documentation (NDA, ID)',
+        category: 'onboarding'
+      },
+      {
+        name: 'complete_onboarding',
+        description: 'Finalize onboarding and send notifications',
+        category: 'onboarding'
+      },
+      {
+        name: 'initiate_offboarding',
+        description: 'Start the offboarding process',
+        category: 'offboarding'
+      },
+      {
+        name: 'approve_offboarding',
+        description: 'Manager or HR approval of offboarding',
+        category: 'offboarding'
+      },
+      {
+        name: 'deprovision_systems',
+        description: 'Deactivate user accounts and revoke access',
+        category: 'offboarding'
+      },
+      {
+        name: 'process_final_payroll',
+        description: 'Finance integration for final payroll',
+        category: 'offboarding'
+      },
+      {
+        name: 'check_offboarding_compliance',
+        description: 'Verify exit forms and asset return',
+        category: 'offboarding'
+      },
+      {
+        name: 'complete_offboarding',
+        description: 'Finalize offboarding and send notifications',
+        category: 'offboarding'
+      },
+      {
+        name: 'get_onboarding_status',
+        description: 'Check status of onboarding process',
+        category: 'query'
+      },
+      {
+        name: 'get_offboarding_status',
+        description: 'Check status of offboarding process',
+        category: 'query'
+      },
+      {
+        name: 'list_pending_approvals',
+        description: 'Get all pending approvals',
+        category: 'query'
+      },
+      {
+        name: 'get_employee_details',
+        description: 'Retrieve employee information',
+        category: 'query'
+      }
+    ],
+    integration: {
+      microsoft_copilot: {
+        server_name: 'Nexus Onboarding/Offboarding MCP',
+        server_description: 'Handles automated employee onboarding and offboarding workflows with HRMS integration, compliance checks, and system provisioning',
+        command: 'node src/mcp-server.ts',
+        note: 'Use this command in Microsoft Copilot Studio MCP server configuration'
+      }
+    },
+    documentation: 'See MCP_INTEGRATION.md for detailed integration guide'
   })
 })
 
