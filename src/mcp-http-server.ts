@@ -1069,6 +1069,34 @@ export function createMCPRouter() {
     }
   })
 
+  // SSE Endpoint for MCP Connection
+  router.get('/sse', (req: Request, res: Response) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    })
+
+    // Send the endpoint event pointing to the message handler
+    // We use a relative path which the client should resolve against the SSE URL
+    // If the SSE URL is /mcp/sse, then /mcp/message is the sibling
+    const messageEndpoint = '/mcp/message'
+    
+    res.write(`event: endpoint\ndata: ${messageEndpoint}\n\n`)
+    
+    console.log('MCP SSE connection established')
+
+    // Keep the connection alive
+    const keepAlive = setInterval(() => {
+      res.write(': keepalive\n\n')
+    }, 15000)
+
+    req.on('close', () => {
+      console.log('MCP SSE connection closed')
+      clearInterval(keepAlive)
+    })
+  })
+
   // Server info endpoint
   router.get('/', (req: Request, res: Response) => {
     res.json({
@@ -1077,11 +1105,15 @@ export function createMCPRouter() {
       description: 'MCP server for employee onboarding and offboarding workflows',
       protocol: 'MCP over HTTP',
       transport: 'http',
-      endpoint: '/mcp/message',
+      endpoints: {
+        sse: '/mcp/sse',
+        messages: '/mcp/message'
+      },
       tools: tools.map(t => ({
         name: t.name,
         description: t.description,
       })),
+      note: 'For Copilot Studio, use the SSE URL: https://your-app.vercel.app/mcp/sse'
     })
   })
 
