@@ -1069,18 +1069,31 @@ export function createMCPRouter() {
     }
   })
 
+  // Enable CORS for MCP endpoints
+  router.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200)
+    }
+    next()
+  })
+
   // SSE Endpoint for MCP Connection
   router.get('/sse', (req: Request, res: Response) => {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
     })
 
-    // Send the endpoint event pointing to the message handler
-    // We use a relative path which the client should resolve against the SSE URL
-    // If the SSE URL is /mcp/sse, then /mcp/message is the sibling
-    const messageEndpoint = '/mcp/message'
+    // Construct absolute URL for the message endpoint
+    // This helps avoid issues with relative path resolution in some clients
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol
+    const host = req.headers['x-forwarded-host'] || req.headers.host
+    const messageEndpoint = `${protocol}://${host}/mcp/message`
     
     res.write(`event: endpoint\ndata: ${messageEndpoint}\n\n`)
     
@@ -1099,6 +1112,10 @@ export function createMCPRouter() {
 
   // Server info endpoint
   router.get('/', (req: Request, res: Response) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol
+    const host = req.headers['x-forwarded-host'] || req.headers.host
+    const baseUrl = `${protocol}://${host}`
+
     res.json({
       name: 'Nexus HR Workflows MCP',
       version: '1.0.0',
@@ -1106,14 +1123,14 @@ export function createMCPRouter() {
       protocol: 'MCP over HTTP',
       transport: 'http',
       endpoints: {
-        sse: '/mcp/sse',
-        messages: '/mcp/message'
+        sse: `${baseUrl}/mcp/sse`,
+        messages: `${baseUrl}/mcp/message`
       },
       tools: tools.map(t => ({
         name: t.name,
         description: t.description,
       })),
-      note: 'For Copilot Studio, use the SSE URL: https://your-app.vercel.app/mcp/sse'
+      note: `For Copilot Studio, use the SSE URL: ${baseUrl}/mcp/sse`
     })
   })
 
