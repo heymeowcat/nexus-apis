@@ -903,13 +903,20 @@ server.tool('get_employee_details', 'Retrieve employee information from onboardi
         ],
     };
 });
-// Start server
-async function main() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error('Nexus Onboarding/Offboarding MCP Server running on stdio');
+// Export server for use in other transports
+export { server };
+// Start server if run directly
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const isMainModule = process.argv[1] === __filename;
+if (isMainModule) {
+    async function main() {
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        console.error('Nexus Onboarding/Offboarding MCP Server running on stdio');
+    }
+    main().catch((error) => {
+        console.error('Fatal error in main():', error);
+        process.exit(1);
+    });
 }
-main().catch((error) => {
-    console.error('Fatal error in main():', error);
-    process.exit(1);
-});

@@ -1,6 +1,8 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { createMCPRouter } from './mcp-http.js'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -8,7 +10,8 @@ const app = express()
 
 app.use(express.json())
 
-// MCP server removed as per refactoring to standalone stdio server
+// Mount MCP Streamable HTTP server at /mcp
+app.use('/mcp', createMCPRouter())
 
 // Home route - HTML
 app.get('/', (req, res) => {
@@ -766,4 +769,12 @@ app.get('/acc/reports/invoice-status', (req, res) => {
   })
 })
 
+
 export default app
+
+// Start server
+const PORT = process.env.PORT || 3000
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`MCP Streamable HTTP endpoint: http://localhost:${PORT}/mcp`)
+})
