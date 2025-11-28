@@ -1,8 +1,6 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createMCPRouter } from './mcp-http-server.js'
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -10,8 +8,7 @@ const app = express()
 
 app.use(express.json())
 
-// Mount MCP server at /mcp
-app.use('/mcp', createMCPRouter())
+// MCP server removed as per refactoring to standalone stdio server
 
 // Home route - HTML
 app.get('/', (req, res) => {

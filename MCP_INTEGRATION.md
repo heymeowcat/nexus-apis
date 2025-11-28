@@ -14,27 +14,46 @@ This project now includes a **Model Context Protocol (MCP) server** for automate
 
 ## Accessing the MCP Server
 
-### Information Endpoint
-
-Visit the `/mcp` endpoint on your deployed Vercel app to get server information:
-
-```
-GET https://your-vercel-app.vercel.app/mcp
-```
-
-This returns JSON with all available tools and integration instructions.
-
 ### Running the MCP Server
 
-The MCP server runs as a separate process using stdio transport:
+The MCP server runs as a separate process using stdio transport. You can run it locally using the following command:
 
 ```bash
-node src/mcp-server.ts
+npm run start:mcp
 ```
 
-## Microsoft Copilot Studio Integration
+or directly with `tsx`:
 
-### Adding the MCP Server
+```bash
+npx tsx src/mcp-server.ts
+```
+
+## Client Integration
+
+### Claude for Desktop
+
+To use this MCP server with Claude for Desktop, add the following configuration to your `claude_desktop_config.json` file (typically located at `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "nexus-apis": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tsx",
+        "/ABSOLUTE/PATH/TO/nexus-apis/src/mcp-server.ts"
+      ]
+    }
+  }
+}
+```
+
+Make sure to replace `/ABSOLUTE/PATH/TO/nexus-apis` with the actual absolute path to your project directory.
+
+### Microsoft Copilot Studio
+
+#### Adding the MCP Server
 
 1. Open **Microsoft Copilot Studio**
 2. Navigate to your agent (HR, Finance, or PM agent)
@@ -43,15 +62,12 @@ node src/mcp-server.ts
 5. Enter the following details:
    - **Server Name**: `Nexus Onboarding/Offboarding MCP`
    - **Server Description**: `Handles automated employee onboarding and offboarding workflows with HRMS integration, compliance checks, and system provisioning`
-   - **Server Command**: `node src/mcp-server.ts`
+   - **Server Command**: `npx -y tsx src/mcp-server.ts`
    - **Working Directory**: Path to your nexus-apis project
 
-### Configuration for Vercel Deployment
+#### Configuration for Vercel Deployment
 
-Since the MCP server uses stdio transport, you'll need to run it locally or on a server where Microsoft Copilot can execute the command. For cloud deployment:
-
-1. **Option A - Local MCP Server**: Run the MCP server on your local machine or a dedicated server, and configure Copilot to connect to it
-2. **Option B - Serverless Function**: Convert to HTTP transport (requires code modifications)
+Since the MCP server uses stdio transport, it is designed to run locally or on a server where the client can execute the command. It is not exposed via HTTP on Vercel.
 
 ## Available Tools
 
