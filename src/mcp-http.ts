@@ -10,6 +10,9 @@ export function createMCPRouter() {
 
   // Main endpoint for Streamable HTTP
   router.all('/', async (req, res) => {
+
+    req.header['accept'] = 'application/json', 'text/event-stream';
+
     const sessionId = req.headers['mcp-session-id'] as string | undefined
 
     let transport: StreamableHTTPServerTransport
