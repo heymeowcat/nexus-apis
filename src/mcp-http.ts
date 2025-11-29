@@ -43,6 +43,11 @@ export function createMCPRouter() {
       await server.connect(transport)
     }
 
+    // Ensure session ID is sent back to client
+    if (transport.sessionId) {
+      res.setHeader('mcp-session-id', transport.sessionId)
+    }
+
     // Handle the request
     await transport.handleRequest(req, res, req.body)
   })

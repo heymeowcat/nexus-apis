@@ -7,6 +7,7 @@ export function createMCPRouter() {
     const transports = {};
     // Main endpoint for Streamable HTTP
     router.all('/', async (req, res) => {
+        req.header['accept'] = 'application/json', 'text/event-stream';
         const sessionId = req.headers['mcp-session-id'];
         let transport;
         if (sessionId && transports[sessionId]) {
@@ -31,6 +32,10 @@ export function createMCPRouter() {
             }
             // Connect the server to the transport
             await server.connect(transport);
+        }
+        // Ensure session ID is sent back to client
+        if (transport.sessionId) {
+            res.setHeader('mcp-session-id', transport.sessionId);
         }
         // Handle the request
         await transport.handleRequest(req, res, req.body);
