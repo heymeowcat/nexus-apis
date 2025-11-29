@@ -1,8 +1,7 @@
-
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { mcpHandler } from './mcp-handler.js'
+import { createMCPRouter } from './mcp-http.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -11,34 +10,8 @@ const app = express()
 
 app.use(express.json())
 
-// MCP Streamable HTTP endpoint using mcp-handler
-app.all('/mcp', async (req, res) => {
-  const protocol = req.protocol
-  const host = req.get('host')
-  const url = new URL(req.originalUrl, `${protocol}://${host}`)
-  
-  const webReq = new Request(url, {
-    method: req.method,
-    headers: req.headers as any,
-    body: req.method === 'POST' ? JSON.stringify(req.body) : null,
-  })
-
-  try {
-    const webRes = await mcpHandler(webReq)
-    
-    webRes.headers.forEach((value, key) => {
-      res.setHeader(key, value)
-    })
-    
-    res.status(webRes.status)
-    
-    const text = await webRes.text()
-    res.send(text)
-  } catch (error) {
-    console.error('Error in MCP handler:', error)
-    res.status(500).send('Internal Server Error')
-  }
-})
+// Mount MCP Streamable HTTP server at /mcp
+app.use('/mcp', createMCPRouter())
 
 // Home route - HTML
 app.get('/', (req, res) => {
