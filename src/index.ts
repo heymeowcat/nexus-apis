@@ -53,7 +53,6 @@ app.get('/', (req, res) => {
           <tbody>
             <tr><td>POST</td><td>/requisitionApproval</td><td>Submit a requisition for approval</td></tr>
             <tr><td>GET</td><td>/healthz</td><td>Service health check</td></tr>
-            <tr><td>MCP</td><td>/mcp</td><td><strong>🔌 MCP Server for Onboarding/Offboarding</strong> (17 tools available)</td></tr>
             <tr><td>GET</td><td>/po/notifications</td><td>Retrieve pending PO approvals</td></tr>
             <tr><td>POST</td><td>/po/approve</td><td>Approve a Purchase Order</td></tr>
             <tr><td>POST</td><td>/po/reject</td><td>Reject a Purchase Order</td></tr>
